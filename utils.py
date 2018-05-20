@@ -87,6 +87,8 @@ def activate(input_layer, act='relu', name='activation'):
         return tf.nn.sigmoid(tf.square(input_layer, name))
     if act == 'sigmoid':
         return tf.nn.sigmoid(input_layer, name)
+    if act == 'softmax':
+        return tf.nn.softmax(input_layer,)
 
 
 # Fully connected custom layer for PSO

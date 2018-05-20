@@ -318,7 +318,7 @@ for pno in range(N_PARTICLES):
         layer_scope = 'pno' + str(pno + 1) + 'fc' + str(idx + 1)
         net, pso_tupple = fc(input_tensor=net,
                              n_output_units=num_neuron,
-                             activation_fn='sigmoid',
+                             activation_fn='softmax', # 'sigmoid',
                              scope=layer_scope,
                              uniform=True)
         w, b, pw, pb, vw, vb = pso_tupple
@@ -541,7 +541,7 @@ for pno in range(N_PARTICLES):
     print_prog_bar(iteration=pno + 1,
                    total=N_PARTICLES,
                    suffix=str_memusage('M'))
-
+print(nets)
 
 msgtime('Completed\t\t:')
 
@@ -596,7 +596,19 @@ with tf.Session() as sess:
                 print('Gfit:', gfit)
             else:
                 print('Best Particle', min(_losses))
-
+            v_x = mnist_pso.test.images[:100]
+            v_y = mnist_pso.test.labels[:100]
+            results = []
+            for net in nets:
+                y_pre = sess.run(net, feed_dict={net_in: v_x})
+                correct_prediction = tf.equal(tf.argmax(y_pre,1), tf.argmax(v_y,1))
+                #calculate average
+                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                #get input content
+                result = sess.run(accuracy,feed_dict={net_in: v_x, label: v_y})
+                results.append(result)
+            print(results)
+            print('Best Accuracy: ', max(results))
     end_time = time.time()
     # Close the writer
     summary_writer.close()

@@ -13,6 +13,14 @@ from utils import msgtime, str_memusage, print_prog_bar, fcn_stats, chical, maxc
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 
+import xlwt
+
+book = xlwt.Workbook(encoding='utf-8', style_compression=0)
+sheet = book.add_sheet('pso', cell_overwrite_ok=True)
+sheet.write(0, 0, 'step')
+sheet.write(0, 1, 'loss')
+sheet.write(0, 2, 'accu')
+
 def compute_accuracy(v_x, v_y):
     global prediction
     #input v_x to nn and get the result with y_pre
@@ -412,6 +420,7 @@ for pno in range(N_PARTICLES):
 
     # Define loss for each of the particle nets
     loss = tf.nn.l2_loss(net - label)
+    # loss = tf.reduce_mean(-tf.reduce_sum(label*tf.log(net), reduction_indices=[1]))
     particlebest = tf.cond(loss < pfit, lambda: loss, lambda: pfit)
     fit_update = tf.assign(pfit, particlebest, validate_shape=True)
     fit_updates.append(fit_update)
@@ -545,7 +554,15 @@ print(nets)
 
 msgtime('Completed\t\t:')
 
-
+_var_list = (
+    tf.trainable_variables() +
+    tf.get_collection(tf.GraphKeys.TRAINABLE_RESOURCE_VARIABLES))
+# pylint: disable=protected-access
+_var_list += tf.get_collection(tf.GraphKeys._STREAMING_MODEL_PORTS)
+print(len(_var_list))
+for var in _var_list:
+    print(var)
+# print(_var_list)
 
 # Initialize the entire graph
 init = tf.global_variables_initializer()
@@ -571,7 +588,7 @@ else:
 
 
 mnist_pso = input_data.read_data_sets("MNIST_data/", one_hot=True)
-
+print(mnist_pso.test.labels)
 with tf.Session() as sess:
     sess.run(init)
 
@@ -590,14 +607,14 @@ with tf.Session() as sess:
             _losses, _, gfit, gbiases, vweights, vbiases, gweights = _tuple
         else:
             _losses, _, vweights, vbiases = _tuple
-        if (i + 1) % PRINT_ITER == 0:
+        if ((i + 1) % PRINT_ITER == 0) or (i == 0):
             print('Losses:', _losses, 'Iteration:', i+1)
             if not LBPSO:
                 print('Gfit:', gfit)
             else:
                 print('Best Particle', min(_losses))
-            v_x = mnist_pso.test.images[:100]
-            v_y = mnist_pso.test.labels[:100]
+            v_x = mnist_pso.test.images[:300]
+            v_y = mnist_pso.test.labels[:300]
             results = []
             for net in nets:
                 y_pre = sess.run(net, feed_dict={net_in: v_x})
@@ -609,8 +626,13 @@ with tf.Session() as sess:
                 results.append(result)
             print(results)
             print('Best Accuracy: ', max(results))
+            sheet.write((i + 1) / 100 + 1, 0, str(i + 1))
+            sheet.write((i + 1) / 100 + 1, 1, str(gfit))
+            sheet.write((i + 1) / 100 + 1, 2, str(max(results)))
     end_time = time.time()
     # Close the writer
     summary_writer.close()
 
     print('Total Time:', end_time - start_time)
+
+book.save('pso_' + str(LEARNING_RATE) + '_' + str(MAX_VEL_DECAY) + '.xls')

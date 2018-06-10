@@ -8,7 +8,7 @@ import time
 import random
 import math
 import argparse
-from utils import msgtime, str_memusage, print_prog_bar, fcn_stats, chical, maxclip, fc
+from tensorflow.contrib.pso.python.utils import msgtime, str_memusage, print_prog_bar, fcn_stats, chical, maxclip, fc
 
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
